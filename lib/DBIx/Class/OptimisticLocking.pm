@@ -174,10 +174,6 @@ sub _optimistic_locking_ident_condition {
 	my $ident_condition = $self->{_orig_ident} || $self->ident_condition;
 	my $mode = $self->optimistic_locking_mode;
 
-	# also check to see if this column is considered insignificant (default behavior: every column is significant)
-	my $insignificant = $self->optimistic_locking_insignificant_dirty_columns || [];
-	
-	# also check to see if this column is considered insignificant (default behavior: every column is significant)
 	my $insignificant = $self->optimistic_locking_insignificant_dirty_columns || [];
 		
 	if ( $mode eq 'dirty' ) {
@@ -193,7 +189,9 @@ sub _optimistic_locking_ident_condition {
 
 	} elsif ( $mode eq 'all' ) {
 
-		$ident_condition = { $self->get_original_columns, %$ident_condition };
+		my %orig = $self->get_original_columns;
+		delete($orig{$_}) foreach(@$insignificant);
+		$ident_condition = { %orig, %$ident_condition };
 
 	}
 
