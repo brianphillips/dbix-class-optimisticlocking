@@ -118,6 +118,20 @@ sub get_original_column {
 	return exists $columns{$column} ? $columns{$column} : ();
 }
 
+=head1 EXTENDED METHODS
+
+=head2 set_column
+
+See L<DBIx::Class::Row::set_column> for basic usage.
+
+In addition to the basic functionality, this method will track the
+original value of the column if the optimistic locking mode is set
+to C<dirty> or C<all> and this is the first time this column has been
+updated.  So it can be used as a C<WHERE> condition when the C<UPDATE>
+is issued.
+
+=cut
+
 sub set_column {
 	my $self = shift;
 	my ($column) = @_;
@@ -138,6 +152,16 @@ sub set_column {
 	return $self->next::method(@_);
 }
 
+=head2 update
+
+See L<DBIx::Class::Row::update> for basic usage.
+
+Before issuing the actual update, this component injects additional
+criteria that will be used in the C<WHERE> clause in the C<UPDATE>. The
+criteria that is used depends on the L<CONFIGURATION> defined in the
+model class.
+
+=cut
 
 sub update {
 	my $self = shift;
@@ -161,7 +185,7 @@ sub update {
 	# here to make sure it has all the elements we need (kind of a hack)
 	$self->{_orig_ident} = $self->_optimistic_locking_ident_condition;
 
-	my $return = $self->next::method(@_);
+	my $return = $self->next::method();
 
 	# flush the original values cache
 	undef $self->{_opt_locking_orig_values};
