@@ -4,7 +4,7 @@ use warnings;
 use strict;
 
 use base 'DBIx::Class';
-
+use Carp qw(croak);
 
 =head1 NAME
 
@@ -88,6 +88,16 @@ __PACKAGE__->mk_classdata(optimistic_locking_strategy => 'dirty');
 __PACKAGE__->mk_classdata('optimistic_locking_ignore_columns');
 __PACKAGE__->mk_classdata(optimistic_locking_version_column => 'version');
 
+my %valid_strategies = map { $_ => undef } qw(dirty all none version);
+
+sub optimistic_locking_strategy {
+	my @args = @_;
+	my $class = shift(@args);
+	my ($strategy) = $args[0];
+	croak "invalid optimistic_locking_strategy $strategy" unless exists $valid_strategies{$strategy};
+	return $class->_opt_locking_strategy_accessor(@args);
+}
+
 sub _get_original_columns {
 	my $self = shift;
 	my %columns = ( $self->get_columns, %{ $self->{_opt_locking_orig_values} || {} } );
@@ -117,23 +127,16 @@ is issued.
 =cut
 
 sub set_column {
-	my $self = shift;
-	my ($column) = @_;
-
-    my $track_original_values = (
-        (
-                 $self->optimistic_locking_strategy eq 'dirty'
-              || $self->optimistic_locking_strategy eq 'all'
-        )
-        && !$self->is_column_changed($column)
-    );
+	my @args = @_;
+	my $self = shift(@args);
+	my ($column) = $args[0];
 
 	# save off the original if this is the first time the column has been changed
-	if($track_original_values){
+	if($self->optimistic_locking_strategy && !$self->is_column_changed($column)){
 
             $self->{_opt_locking_orig_values}->{$column} = $self->get_column($column);
 	}
-	return $self->next::method(@_);
+	return $self->next::method(@args);
 }
 
 =head2 update
@@ -201,9 +204,8 @@ sub _optimistic_locking_ident_condition {
         $ident_condition = {%orig, %$ident_condition };
 
 	} elsif ( $mode eq 'version' ) {
-
 		my $v_col = $self->optimistic_locking_version_column;
-		$ident_condition->{ $v_col } = $self->get_column( $v_col );
+		$ident_condition->{ $v_col } = $self->_get_original_column( $v_col );
 
 	} elsif ( $mode eq 'all' ) {
 

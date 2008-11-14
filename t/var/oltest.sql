@@ -33,17 +33,19 @@ CREATE TABLE test_all_ignored (
 CREATE TABLE test_version (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     col1 TEXT NOT NULL,
-    version INTEGER NOT NULL
+    col2 TEXT NOT NULL,
+    version INTEGER NOT NULL default 0
 );
 CREATE TABLE test_version_ignored (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     col1 TEXT NOT NULL,
     col2 TEXT NOT NULL,
-    version INTEGER NOT NULL
+    version INTEGER NOT NULL default 0
 );
 CREATE TABLE test_version_alt (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     col1 TEXT NOT NULL,
-    myversion INTEGER NOT NULL
+    col2 TEXT NOT NULL,
+    myversion INTEGER NOT NULL default 0
 );
 COMMIT;

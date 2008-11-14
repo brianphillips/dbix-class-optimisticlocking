@@ -4,6 +4,11 @@ package # hide from PAUSE
 use strict;
 use warnings;
 
+use File::Spec;
+use Cwd qw(abs_path);
+
+my ($vol, $dir, $file) = File::Spec->splitpath(abs_path(__FILE__));
+
 # much of this is ripped directly from DBIx::Class::VirtualColumns (thanks for the jumpstart!)
 sub init_schema {
     my $self = shift;
@@ -14,14 +19,14 @@ sub init_schema {
     if ( $args{compose_connection} ) {
         $schema =
           OLTest::Schema->compose_connection( 'OLTest',
-            "dbi:SQLite:t/var/oltest.db", "", "", { AutoCommit => 1 } );
+            "dbi:SQLite:$dir/../var/oltest.db", "", "", { AutoCommit => 1 } );
     }
     else {
         $schema = OLTest::Schema->compose_namespace('OLTest');
     }
     if ( !$args{no_connect} ) {
         $schema =
-          $schema->connect( "dbi:SQLite:t/var/oltest.db", "", "", { AutoCommit => 1 } );
+          $schema->connect( "dbi:SQLite:$dir/../var/oltest.db", "", "", { AutoCommit => 1 } );
         $schema->storage->on_connect_do( ['PRAGMA synchronous = OFF'] );
     }
     unless ( $args{no_deploy} ) {
@@ -38,7 +43,7 @@ sub deploy_schema {
         return $schema->deploy();
     }
     else {
-        open IN, "t/var/oltest.sql";
+        open IN, "$dir/../var/oltest.sql";
         my $sql;
         { local $/ = undef; $sql = <IN>; }
         close IN;
