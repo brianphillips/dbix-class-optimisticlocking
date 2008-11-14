@@ -48,7 +48,6 @@ $r1->update;
 is($r1->col2, 'b', "different column updates don't clash");
 
 $r1->discard_changes;
-$DB::single=1;
 $r1->col1('d');
 $r1->col1('e');
 eval { $r1->update };
