@@ -11,7 +11,6 @@ WriteMakefile(
         ? ( 'LICENSE' => 'perl' )
         : () ),
     PL_FILES   => {},
-    TESTS => [ 't/*.t', 't/*/*.t' ],
     PREREQ_PM  => {
         'Test::More'  => 0,
         'DBIx::Class' => 0,
