@@ -3,6 +3,6 @@ package    # hide from PAUSE
 
 use base qw/DBIx::Class::Schema/;
 
-__PACKAGE__->load_classes(qw/TestDirty TestDirtyInsignificant TestAll TestVersion TestVersionAlt/);
+__PACKAGE__->load_classes(qw/TestDirty TestDirtyIgnored TestAll TestAllIgnored TestVersion TestVersionAlt TestVersionIgnored/);
 
 1;

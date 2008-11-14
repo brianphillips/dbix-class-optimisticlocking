@@ -34,7 +34,7 @@ Example usage:
 
 =head1 CONFIGURATION
 
-=head2 optimistic_locking_mode
+=head2 optimistic_locking_strategy
 
 This configuration controls the main functionality of this component.
 The current recognized optimistic locking modes supported are:
@@ -67,7 +67,7 @@ load it if you don't need it? :-)
 
 =back
 
-=head2 optimistic_locking_insignificant_dirty_columns
+=head2 optimistic_locking_ignore_columns
 
 Occassionally you may elect to ignore certain columns that are not
 significant enough to detect colisions and cause the update to fail.
@@ -77,44 +77,28 @@ where clause for the update.
 
 =head2 optimistic_locking_version_column
 
-If you are using 'version' as your L<optimistic_locking_mode>, you can
+If you are using 'version' as your L<optimistic_locking_strategy>, you can
 optionally specify a different name for the column used for version
 tracking.  If an alternate name is not passed, the component will look
 for a column named C<version>.
 
 =cut
 
-__PACKAGE__->mk_classdata(optimistic_locking_mode => 'dirty');
-__PACKAGE__->mk_classdata('optimistic_locking_insignificant_dirty_columns');
+__PACKAGE__->mk_classdata(optimistic_locking_strategy => 'dirty');
+__PACKAGE__->mk_classdata('optimistic_locking_ignore_columns');
 __PACKAGE__->mk_classdata(optimistic_locking_version_column => 'version');
 
-=head1 METHODS
-
-=head2 get_original_columns
-
-Corresponds to L<DBIx::Class::Row/get_columns> except that the values
-returned reflect the original state of the object.
-
-=cut
-
-
-sub get_original_columns {
+sub _get_original_columns {
 	my $self = shift;
 	my %columns = ( $self->get_columns, %{ $self->{_opt_locking_orig_values} || {} } );
 	return %columns;
 }
 
-=head2 get_original_column
 
-Corresponds to L<DBIx::Class::Row/get_column> except that the value
-returned reflects the original state of the object.
-
-=cut
-
-sub get_original_column {
+sub _get_original_column {
 	my $self = shift;
 	my $column = shift;
-	my %columns = $self->get_original_columns;
+	my %columns = $self->_get_original_columns;
 	return exists $columns{$column} ? $columns{$column} : ();
 }
 
@@ -138,8 +122,8 @@ sub set_column {
 
     my $track_original_values = (
         (
-                 $self->optimistic_locking_mode eq 'dirty'
-              || $self->optimistic_locking_mode eq 'all'
+                 $self->optimistic_locking_strategy eq 'dirty'
+              || $self->optimistic_locking_strategy eq 'all'
         )
         && !$self->is_column_changed($column)
     );
@@ -174,11 +158,21 @@ sub update {
 	# short-circuit if we're not changed
 	return $self if !$self->is_changed;
 
-    if ( $self->optimistic_locking_mode eq 'version' ) {
-        my $v_col = $self->optimistic_locking_version_column;
+    if ( $self->optimistic_locking_strategy eq 'version' ) {
+		# increment the version number but only if there are dirty
+		# columns that are not being ignored by the optimistic
+		# locking
 
-        # increment the version
-        $self->set_column( $v_col, $self->get_original_column($v_col) + 1 );
+		my %dirty_columns = $self->get_dirty_columns;
+
+		delete(@dirty_columns{ @{ $self->optimistic_locking_ignore_columns || [] } });
+
+		if(%dirty_columns){
+			my $v_col = $self->optimistic_locking_version_column;
+
+			# increment the version
+			$self->set_column( $v_col, $self->_get_original_column($v_col) + 1 );
+		}
     }
 
 	# DBIx::Class::Row::update looks at this value, we'll precompute it
@@ -196,14 +190,14 @@ sub update {
 sub _optimistic_locking_ident_condition {
 	my $self = shift;
 	my $ident_condition = $self->{_orig_ident} || $self->ident_condition;
-	my $mode = $self->optimistic_locking_mode;
+	my $mode = $self->optimistic_locking_strategy;
 
-	my $insignificant = $self->optimistic_locking_insignificant_dirty_columns || [];
+	my $ignore_columns = $self->optimistic_locking_ignore_columns || [];
 		
 	if ( $mode eq 'dirty' ) {
 
         my %orig = %{$self->{_opt_locking_orig_values} || {}};
-		delete($orig{$_}) foreach(@$insignificant);
+		delete($orig{$_}) foreach(@$ignore_columns);
         $ident_condition = {%orig, %$ident_condition };
 
 	} elsif ( $mode eq 'version' ) {
@@ -213,14 +207,15 @@ sub _optimistic_locking_ident_condition {
 
 	} elsif ( $mode eq 'all' ) {
 
-		my %orig = $self->get_original_columns;
-		delete($orig{$_}) foreach(@$insignificant);
+		my %orig = $self->_get_original_columns;
+		delete($orig{$_}) foreach(@$ignore_columns);
 		$ident_condition = { %orig, %$ident_condition };
 
 	}
 
 	return $ident_condition;
 }
+
 
 =head1 AUTHOR
 
