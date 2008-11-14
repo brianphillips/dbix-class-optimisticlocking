@@ -132,7 +132,7 @@ sub set_column {
 	my ($column) = $args[0];
 
 	# save off the original if this is the first time the column has been changed
-	if($self->optimistic_locking_strategy && !$self->is_column_changed($column)){
+	if($self->optimistic_locking_strategy ne 'none' && !$self->is_column_changed($column)){
 
             $self->{_opt_locking_orig_values}->{$column} = $self->get_column($column);
 	}
@@ -212,7 +212,6 @@ sub _optimistic_locking_ident_condition {
 		my %orig = $self->_get_original_columns;
 		delete($orig{$_}) foreach(@$ignore_columns);
 		$ident_condition = { %orig, %$ident_condition };
-
 	}
 
 	return $ident_condition;

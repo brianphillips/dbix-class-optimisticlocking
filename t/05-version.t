@@ -7,7 +7,7 @@ BEGIN {
     eval "use DBD::SQLite";
     plan $@
       ? ( skip_all => 'needs DBD::SQLite for testing' )
-      : ( tests => 11 );
+      : ( tests => 12 );
     $DBD::SQLite::sqlite_version; # get rid of warnings
 }
 
@@ -38,6 +38,10 @@ $r1->update;
 $r1->discard_changes;
 
 is($r1->version, 1, 'version incremented');
+
+$r1->update;
+$r1->discard_changes;
+is($r1->version, 1, 'version not incremented when update is not executed');
 
 # fails because $r2's version is behind $r1's version
 eval {$r2->update};
