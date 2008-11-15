@@ -26,11 +26,48 @@ a row.
 
 Example usage:
 
-	package My::Class;
+	package DB::Main::Orders;
 
 	use base qw/DBIx::Class/;
 
 	__PACKAGE__->load_components(qw/OptimisticLocking Core/);
+
+	__PACKAGE__->optimistic_locking_strategy('dirty'); # this is the default behavior
+
+=head1 PURPOSE
+
+Optimistic locking is an alternative to using exclusive locks when
+you have the possibility of concurrent, conflicting updates in your
+database.  The basic principle is you allow any and all clients to issue
+updates and rather than preemptively synchronizing all data modifications
+(which is what happens with exclusive locks) you are "optimistic" that
+updates won't interfere with one another and the updates will only fail
+when they do in fact interfere with one another.
+
+Consider the following scenario (in timeline order, not in the same
+block of code):
+
+	my $order = $schema->resultset('Orders')->find(1);
+
+	# some other different, concurrent process loads the same object
+	my $other_order = $schema->resultset('Orders')->find(1);
+
+	$order->status('fraud review');
+	$other_order->status('processed');
+
+	$order->update; # this succeeds
+	$other_order->update; # this fails when using optimistic locking
+
+Without optimistic locking (or exclusive locking), the example order
+would have two sequential updates issued with the second essentially
+erasing the results of the first.  With optimistic locking, the second
+update (on C<$other_order>) would fail.
+
+This optimistic locking is typically done by adding additional
+restrictions to the C<WHERE> clause of the C<UPDATE> statement.  These
+additional restrictions ensure the data is still in the expected state
+before applying the update.  This DBIx::Class::OptimisticLocking component
+provides a few different strategies for providing this functionality.
 
 =head1 CONFIGURATION
 
@@ -51,8 +88,10 @@ Any columns that are not being updated will be ignored.
 
 When issuing an update, the C<WHERE> clause of the update will include
 a check of the C<version> column (or otherwise configured column using
-L<optimistic_locking_version_column>).  The C<version> column will also
-be incremented on each update as well.
+L<optimistic_locking_version_column>).  The C<version> column will
+also be incremented on each update as well.  The exception is if all
+of the updated columns are in the L<optimistic_locking_ignore_columns>
+configuration.
 
 =item * all
 
@@ -71,16 +110,16 @@ load it if you don't need it? :-)
 
 Occassionally you may elect to ignore certain columns that are not
 significant enough to detect colisions and cause the update to fail.
-For instance, if you have a timestamp column, you may want to add
-that to this list so that it is ignored when generating the C<UPDATE>
-where clause for the update.
+For instance, if you have a timestamp column, you may want to add that
+to this list so that it is ignored when generating the C<UPDATE> where
+clause for the update.
 
 =head2 optimistic_locking_version_column
 
-If you are using 'version' as your L<optimistic_locking_strategy>, you can
-optionally specify a different name for the column used for version
-tracking.  If an alternate name is not passed, the component will look
-for a column named C<version>.
+If you are using 'version' as your L<optimistic_locking_strategy>,
+you can optionally specify a different name for the column used for
+version tracking.  If an alternate name is not passed, the component
+will look for a column named C<version> in your model.
 
 =cut
 
