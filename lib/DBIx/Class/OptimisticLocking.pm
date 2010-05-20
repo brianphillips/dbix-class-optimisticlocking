@@ -1,23 +1,12 @@
 package DBIx::Class::OptimisticLocking;
 
-use warnings;
+# ABSTRACT: Optimistic locking support for DBIx::Class
+
 use strict;
+use warnings;
 
 use base 'DBIx::Class';
 use Carp qw(croak);
-
-=head1 NAME
-
-DBIx::Class::OptimisticLocking - Optimistic locking support for
-DBIx::Class
-
-=head1 VERSION
-
-Version 0.01
-
-=cut
-
-our $VERSION = '0.01';
 
 =head1 SYNOPSIS
 
@@ -58,7 +47,7 @@ block of code):
 	$order->update; # this succeeds
 	$other_order->update; # this fails when using optimistic locking
 
-Without optimistic locking (or exclusive locking), the example order
+Without locking (optimistic or exclusive ), the example order
 would have two sequential updates issued with the second essentially
 erasing the results of the first.  With optimistic locking, the second
 update (on C<$other_order>) would fail.
@@ -123,9 +112,9 @@ will look for a column named C<version> in your model.
 
 =cut
 
-__PACKAGE__->mk_classdata(optimistic_locking_strategy => 'dirty');
+__PACKAGE__->mk_classdata( optimistic_locking_strategy => 'dirty' );
 __PACKAGE__->mk_classdata('optimistic_locking_ignore_columns');
-__PACKAGE__->mk_classdata(optimistic_locking_version_column => 'version');
+__PACKAGE__->mk_classdata( optimistic_locking_version_column => 'version' );
 
 my %valid_strategies = map { $_ => undef } qw(dirty all none version);
 
@@ -143,7 +132,6 @@ sub _get_original_columns {
 	return %columns;
 }
 
-
 sub _get_original_column {
 	my $self = shift;
 	my $column = shift;
@@ -160,8 +148,8 @@ See L<DBIx::Class::Row::set_column> for basic usage.
 In addition to the basic functionality, this method will track the
 original value of the column if the optimistic locking mode is set
 to C<dirty> or C<all> and this is the first time this column has been
-updated.  So it can be used as a C<WHERE> condition when the C<UPDATE>
-is issued.
+updated.  These original values will be used as a C<WHERE> condition
+when the C<UPDATE> is issued.
 
 =cut
 
@@ -256,11 +244,6 @@ sub _optimistic_locking_ident_condition {
 	return $ident_condition;
 }
 
-
-=head1 AUTHOR
-
-Brian Phillips, C<< <bphillips at cpan.org> >>
-
 =head1 BUGS
 
 Please report any bugs or feature requests to C<bug-dbix-class-optimisticlocking at rt.cpan.org>, or through
@@ -273,40 +256,10 @@ You can find documentation for this module with the perldoc command.
 
     perldoc DBIx::Class::OptimisticLocking
 
-
-You can also look for information at:
-
-=over 4
-
-=item * RT: CPAN's request tracker
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=DBIx-Class-OptimisticLocking>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/DBIx-Class-OptimisticLocking>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/DBIx-Class-OptimisticLocking>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/DBIx-Class-OptimisticLocking/>
-
-=back
-
-
 =head1 ACKNOWLEDGEMENTS
 
-
-=head1 COPYRIGHT & LICENSE
-
-Copyright 2008 Brian Phillips, all rights reserved.
-
-This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself.
-
+Credit goes to the Java ORM package L<Hibernate|http://hibernate.org>
+for inspiring me to write this for L<DBIx::Class>.
 
 =cut
 
