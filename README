@@ -99,15 +99,6 @@ CONFIGURATION
     for a column named "version" in your model.
 
 EXTENDED METHODS
-  set_column
-    See DBIx::Class::Row::set_column for basic usage.
-
-    In addition to the basic functionality, this method will track the
-    original value of the column if the optimistic locking mode is set to
-    "dirty" or "all" and this is the first time this column has been
-    updated. These original values will be used as a "WHERE" condition when
-    the "UPDATE" is issued.
-
   update
     See DBIx::Class::Row::update for basic usage.
 
@@ -115,6 +106,23 @@ EXTENDED METHODS
     criteria that will be used in the "WHERE" clause in the "UPDATE". The
     criteria that is used depends on the CONFIGURATION defined in the model
     class.
+
+  _track_storage_value
+    This is a method internal to DBIx::Class::Row that basically serves as a
+    predicate method that indicates whether or not the orginal value of the
+    row (as loaded from storage) should be recorded when it is updated.
+
+    Typically, only primary key values are persisted but for
+    DBIx::Class::OptimisticLocking, this list is augmented to include other
+    columns based on the optimistic locking strategy that is configured for
+    this DBIx::Class::ResultSource. For instance, if the chosen strategy is
+    '"dirty"' (the default), every column's original value will be tracked
+    in order to generate the appropriate "WHERE" clause in any subsequent
+    "UPDATE" operations.
+
+  _storage_ident_condition
+    This is an internal method to DBIx::Class::PK that generates the "WHERE"
+    clause for update and delete operations.
 
 BUGS
     Please report any bugs or feature requests to
@@ -137,7 +145,7 @@ AUTHOR
       Brian Phillips <bphillips@cpan.org>
 
 COPYRIGHT AND LICENSE
-    This software is copyright (c) 2010 by Brian Phillips.
+    This software is copyright (c) 2011 by Brian Phillips.
 
     This is free software; you can redistribute it and/or modify it under
     the same terms as the Perl 5 programming language system itself.

@@ -16,7 +16,6 @@ t/05-version.t
 t/06-version-custom-column.t
 t/07-version-with-ignored.t
 t/08-none.t
-t/boilerplate.t
 t/lib/OLTest.pm
 t/lib/OLTest/Schema.pm
 t/lib/OLTest/Schema/TestAll.pm
@@ -29,4 +28,5 @@ t/lib/OLTest/Schema/TestVersionAlt.pm
 t/lib/OLTest/Schema/TestVersionIgnored.pm
 t/release-pod-coverage.t
 t/release-pod-syntax.t
+t/var/oltest.db
 t/var/oltest.sql
