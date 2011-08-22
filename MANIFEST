@@ -4,7 +4,6 @@ MANIFEST
 META.yml
 Makefile.PL
 README
-TODO
 dist.ini
 lib/DBIx/Class/OptimisticLocking.pm
 t/00-compile.t
